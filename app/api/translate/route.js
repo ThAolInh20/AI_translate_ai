@@ -1,13 +1,15 @@
 export async function POST(req) {
   try {
-    const { text } = await req.json();
+    const { text, target } = await req.json();
 
     if (!text) {
       return Response.json({ error: "Missing text" }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Nếu không truyền target → mặc định dịch sang tiếng Việt
+    const targetLang = target || "vi";
 
+    const apiKey = process.env.GEMINI_API_KEY;
     const url =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
       apiKey;
@@ -23,7 +25,10 @@ export async function POST(req) {
               role: "user",
               parts: [
                 {
-                  text: `Hãy dịch đoạn sau sang tiếng Việt tự nhiên nhất, chỉ trả về bản dịch, không giải thích:\n\n${text}`
+                  text:
+                    `Dịch đoạn sau sang ngôn ngữ "${targetLang}". ` +
+                    `Trả về bản dịch tự nhiên nhất, KHÔNG giải thích:\n\n` +
+                    text
                 }
               ]
             }
@@ -38,7 +43,6 @@ export async function POST(req) {
       );
     }
 
-    // Kiểm tra mã status trước khi parse JSON
     if (!response.ok) {
       return Response.json(
         {
@@ -59,7 +63,7 @@ export async function POST(req) {
       );
     }
 
-    // Kiểm tra dữ liệu tồn tại hay không
+    // Lấy kết quả dịch
     const translated =
       data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
 
@@ -67,7 +71,7 @@ export async function POST(req) {
       return Response.json(
         {
           error: "Gemini không trả về nội dung.",
-          raw: data  // gửi raw để bro debug nếu muốn
+          raw: data
         },
         { status: 500 }
       );
