@@ -7,15 +7,16 @@ export async function POST(req) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
+
     const url =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
       apiKey;
-    const response = await fetch(
-        url,      {
+
+    let response;
+    try {
+      response = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [
             {
@@ -27,18 +28,50 @@ export async function POST(req) {
               ]
             }
           ],
-          generationConfig: {
-            maxOutputTokens: 400
-          }
+          generationConfig: { maxOutputTokens: 400 }
         })
-      }
-    );
+      });
+    } catch (fetchErr) {
+      return Response.json(
+        { error: "Không thể kết nối đến Gemini API: " + fetchErr.message },
+        { status: 500 }
+      );
+    }
 
-    const data = await response.json();
+    // Kiểm tra mã status trước khi parse JSON
+    if (!response.ok) {
+      return Response.json(
+        {
+          error: "Gemini trả về lỗi HTTP " + response.status,
+          detail: await response.text()
+        },
+        { status: 500 }
+      );
+    }
 
-    // Lấy text từ cấu trúc trả về chuẩn Gemini
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonErr) {
+      return Response.json(
+        { error: "Lỗi parse JSON từ Gemini API: " + jsonErr.message },
+        { status: 500 }
+      );
+    }
+
+    // Kiểm tra dữ liệu tồn tại hay không
     const translated =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+
+    if (!translated) {
+      return Response.json(
+        {
+          error: "Gemini không trả về nội dung.",
+          raw: data  // gửi raw để bro debug nếu muốn
+        },
+        { status: 500 }
+      );
+    }
 
     return Response.json({
       success: true,
@@ -47,7 +80,7 @@ export async function POST(req) {
 
   } catch (err) {
     return Response.json(
-      { error: err.message || "Server error" },
+      { error: "Server error: " + err.message },
       { status: 500 }
     );
   }
