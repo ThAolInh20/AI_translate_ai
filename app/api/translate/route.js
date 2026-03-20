@@ -37,6 +37,7 @@ export async function POST(req) {
         })
       });
     } catch (fetchErr) {
+      console.error("Translation error:", fetchErr);
       return Response.json(
         { error: "Không thể kết nối đến Gemini API: " + fetchErr.message },
         { status: 500 }
