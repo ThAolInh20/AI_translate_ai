@@ -11,6 +11,8 @@ export async function POST(req) {
 
     // Danh sách các model Gemini được hỗ trợ
     const SUPPORTED_MODELS = [
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
       "gemini-2.5-flash-lite",
       "gemini-2.5-flash",
       "gemini-2.5-pro",
