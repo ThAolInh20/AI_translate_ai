@@ -1,6 +1,6 @@
 export async function POST(req) {
   try {
-    const { text, target } = await req.json();
+    const { text, target, model } = await req.json();
 
     if (!text) {
       return Response.json({ error: "Missing text" }, { status: 400 });
@@ -9,9 +9,21 @@ export async function POST(req) {
     // Nếu không truyền target → mặc định dịch sang tiếng Việt
     const targetLang = target || "vi";
 
+    // Danh sách các model Gemini được hỗ trợ
+    const SUPPORTED_MODELS = [
+      "gemini-2.5-flash-lite",
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-1.5-flash",
+      "gemini-1.5-pro"
+    ];
+
+    // Xác thực model, nếu không hợp lệ hoặc không có → mặc định sử dụng gemini-2.5-flash-lite
+    const selectedModel = SUPPORTED_MODELS.includes(model) ? model : "gemini-2.5-flash-lite";
+
     const apiKey = process.env.GEMINI_API_KEY;
     const url =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" +
+      `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=` +
       apiKey;
 
     let response;
